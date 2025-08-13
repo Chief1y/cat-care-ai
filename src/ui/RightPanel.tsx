@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, View, Text, TouchableOpacity, StyleSheet, Dimensions, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,22 +11,55 @@ export default function RightPanel({ visible, onClose } : { visible: boolean; on
   const { theme, toggleTheme, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = useState(false);
 
   // Fallback for safe area insets if not available
   const safeTop = insets?.top || 20;
 
   useEffect(() => {
-    Animated.timing(translateX, {
-      toValue: visible ? 0 : PANEL_WIDTH,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    if (visible) {
+      setShouldRender(true);
+      // Opening animation
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 250,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Closing animation
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: PANEL_WIDTH,
+          duration: 250,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShouldRender(false);
+      });
+    }
   }, [visible]);
 
-  if (!visible) return null;
+  if (!shouldRender) return null;
 
   return (
-    <View style={styles.overlay}>
+    <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
       {/* Full screen touchable overlay */}
       <TouchableOpacity 
         style={StyleSheet.absoluteFillObject} 
@@ -92,7 +125,7 @@ export default function RightPanel({ visible, onClose } : { visible: boolean; on
           </TouchableOpacity>
         </View>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 

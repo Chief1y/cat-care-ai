@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
 import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -31,10 +31,10 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
         styles.container, 
         { 
           backgroundColor: colors.card,
-          paddingTop: Math.max(safeTop, 20) + 8,
           borderBottomColor: colors.border,
         }
       ]}>
+        {/* Left side - Home/Back button */}
         <TouchableOpacity
           style={styles.left}
           onPress={() => {
@@ -53,6 +53,7 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
           />
         </TouchableOpacity>
 
+        {/* Center - ChatBot button */}
         <TouchableOpacity
           style={[styles.centerButton, { backgroundColor: colors.accent }]}
           onPress={() => nav.navigate('Chat' as never)}
@@ -62,6 +63,7 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
           <Text style={styles.centerText}>ChatBot</Text>
         </TouchableOpacity>
 
+        {/* Right side - Menu button */}
         <TouchableOpacity
           style={styles.right}
           onPress={() => setRightPanelVisible(true)}
@@ -75,13 +77,14 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
-    paddingHorizontal: 16,
+    height: Platform.OS === 'ios' ? 88 : 64,
+    paddingTop: Platform.OS === 'ios' ? 36 : 12,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    zIndex: 10,
+    borderBottomWidth: 0.5,
+    zIndex: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -90,22 +93,21 @@ const styles = StyleSheet.create({
   },
   left: {
     width: 44,
-    height: 44,
-    justifyContent: 'center',
     alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   right: {
     width: 44,
-    height: 44,
-    justifyContent: 'center',
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   centerButton: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
+    paddingVertical: 8,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
