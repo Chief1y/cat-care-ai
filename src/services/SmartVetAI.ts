@@ -214,8 +214,8 @@ export class SmartVetAI {
     }
 
     // Return default response if no pattern matches
-    // Sometimes trigger the doctor consultation edge case (30% chance)
-    const shouldRequireDoctor = Math.random() < 0.3;
+    // Always trigger the doctor consultation for unmatched queries (since they may be serious)
+    const shouldRequireDoctor = true; // Changed from Math.random() < 0.3
     
     if (shouldRequireDoctor) {
       const doctorResponse = this.DEFAULT_RESPONSES.find(r => r.requiresDoctor);

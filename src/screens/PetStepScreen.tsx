@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvo
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 type Props = {
   credentials: { 
@@ -37,48 +37,69 @@ export default function PetStepScreen({ credentials, onBack }: Props) {
   
   const { colors } = useTheme();
   const { register, savePet } = useAuth();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
 
   const handleCompleteRegistration = async () => {
     if (!petName.trim() || !selectedBreed.trim() || !petAge.trim()) {
-      Alert.alert('Error', 'Please fill in all pet information');
+      if (Platform.OS === 'web') {
+        window.alert('Please fill in all pet information');
+      } else {
+        Alert.alert('Error', 'Please fill in all pet information');
+      }
       return;
     }
 
     const age = parseInt(petAge);
     if (isNaN(age) || age < 0 || age > 30) {
-      Alert.alert('Error', 'Please enter a valid age (0-30 years)');
+      if (Platform.OS === 'web') {
+        window.alert('Please enter a valid age (0-30 years)');
+      } else {
+        Alert.alert('Error', 'Please enter a valid age (0-30 years)');
+      }
       return;
     }
 
     setIsLoading(true);
     try {
       // First register the user
-      const success = await register({
+      const userData = {
         username: credentials.username,
         password: credentials.password,
         name: `${credentials.firstName} ${credentials.lastName}`,
-        type: 'pet_owner'
-      });
+        type: 'pet_owner' as const
+      };
+      
+      const success = await register(userData);
       
       if (success) {
-        // Then add the pet
-        await savePet({
+        // Then save the pet
+        const petData = {
           name: petName.trim(),
-          breed: selectedBreed,
+          breed: selectedBreed.trim(),
           age: age
-        });
+        };
         
-        Alert.alert(
-          'Welcome to CatCare AI!', 
-          `Your account has been created and ${petName} has been added to your profile. You can now start chatting with our AI veterinarian!`,
-          [{ text: 'Get Started' }]
-        );
+        await savePet(petData);
+        
+        if (Platform.OS === 'web') {
+          window.alert('Registration successful! You and your pet are now registered.');
+        } else {
+          Alert.alert('Success', 'Registration successful! You and your pet are now registered.');
+        }
       } else {
-        Alert.alert('Registration Failed', 'Username already exists. Please choose a different username.');
+        if (Platform.OS === 'web') {
+          window.alert('Registration failed. Username might already exist.');
+        } else {
+          Alert.alert('Error', 'Registration failed. Username might already exist.');
+        }
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Registration error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Something went wrong. Please try again.');
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

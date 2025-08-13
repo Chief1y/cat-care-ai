@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated, Keyboard, ImageBackground } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useChat, ChatMessage } from '../context/ChatContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 import { useNavigation } from '@react-navigation/native';
 import { SmartVetAI, AIResponse } from '../services/SmartVetAI';
 
@@ -11,10 +11,15 @@ export default function ChatScreen() {
   const { messages, setMessages, isProcessing, setIsProcessing, refreshChat, hasResponses } = useChat();
   const [text, setText] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { colors, theme } = useTheme();
+  const insets = useSafeInsets();
   const navigation = useNavigation();
   const refreshButtonScale = useRef(new Animated.Value(0)).current;
+
+  // Theme-based background images - now using PNG for both web and mobile
+  const backgroundImage = theme === 'light' 
+    ? require('../../assets/ChatGPThorizontal.png')
+    : require('../../assets/ChatGPThorizontal1.png');
 
   useEffect(() => {
     scrollToEnd();
@@ -30,6 +35,22 @@ export default function ChatScreen() {
     }).start();
   }, [hasResponses]);
 
+  // Add keyboard listeners for better mobile experience
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      const keyboardDidShowListener = Keyboard.addListener(
+        'keyboardDidShow',
+        () => {
+          setTimeout(() => scrollToEnd(), 100);
+        }
+      );
+
+      return () => {
+        keyboardDidShowListener?.remove();
+      };
+    }
+  }, []);
+
   const scrollToEnd = () => {
     setTimeout(() => {
       listRef.current?.scrollToEnd?.({ animated: true });
@@ -37,34 +58,42 @@ export default function ChatScreen() {
   };
 
   const confirmRefreshChat = () => {
-    Alert.alert(
-      'Refresh Chat',
-      'This will clear all messages and start a new conversation. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Refresh', 
-          style: 'destructive',
-          onPress: () => {
-            console.log('Refresh button pressed - clearing chat');
-            
-            // Force complete reset
-            setText('');
-            setIsProcessing(false);
-            
-            // Call context refresh
-            refreshChat();
-            
-            // Force scroll to top after refresh
-            setTimeout(() => {
-              listRef.current?.scrollToOffset?.({ offset: 0, animated: true });
-            }, 100);
-            
-            console.log('Refresh completed');
+    if (Platform.OS === 'web') {
+      // For web, use browser confirm
+      if (window.confirm('This will clear all messages and start a new conversation. Continue?')) {
+        console.log('Refresh button pressed - clearing chat');
+        setText('');
+        setIsProcessing(false);
+        refreshChat();
+        setTimeout(() => {
+          listRef.current?.scrollToOffset?.({ offset: 0, animated: true });
+        }, 100);
+        console.log('Refresh completed');
+      }
+    } else {
+      // For mobile, use Alert
+      Alert.alert(
+        'Refresh Chat',
+        'This will clear all messages and start a new conversation. Continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Refresh', 
+            style: 'destructive',
+            onPress: () => {
+              console.log('Refresh button pressed - clearing chat');
+              setText('');
+              setIsProcessing(false);
+              refreshChat();
+              setTimeout(() => {
+                listRef.current?.scrollToOffset?.({ offset: 0, animated: true });
+              }, 100);
+              console.log('Refresh completed');
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const send = async () => {
@@ -262,20 +291,27 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} 
+      style={[styles.container]}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : Platform.OS === 'android' ? 20 : 0}
     >
-      <FlatList
-        ref={listRef}
-        data={messages}
-        renderItem={renderItem}
-        keyExtractor={(i) => i.id}
-        contentContainerStyle={{ 
-          padding: 16,
-          paddingBottom: 20,
-        }}
-        showsVerticalScrollIndicator={false}
-      />
+      <ImageBackground
+        source={backgroundImage}
+        style={[styles.container, { backgroundColor: colors.background }]}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.05 }}
+      >
+        <FlatList
+          ref={listRef}
+          data={messages}
+          renderItem={renderItem}
+          keyExtractor={(i) => i.id}
+          contentContainerStyle={{ 
+            padding: 16,
+            paddingBottom: 20,
+          }}
+          showsVerticalScrollIndicator={false}
+        />
 
       {/* Floating Refresh Button - only show if there are responses */}
       {hasResponses && (
@@ -290,13 +326,7 @@ export default function ChatScreen() {
         ]}>
           <TouchableOpacity 
             style={styles.floatingRefreshTouch}
-            onPress={() => {
-              console.log('Direct refresh test');
-              // Direct refresh without alert for testing
-              setText('');
-              setIsProcessing(false);
-              refreshChat();
-            }}
+            onPress={confirmRefreshChat}
           >
             <Ionicons name="refresh" size={16} color={colors.text as string} />
           </TouchableOpacity>
@@ -320,6 +350,9 @@ export default function ChatScreen() {
             style={[styles.input, { color: colors.text }]}
             multiline
             maxLength={500}
+            onSubmitEditing={send}
+            returnKeyType="send"
+            blurOnSubmit={false}
           />
         </View>
         <TouchableOpacity 
@@ -335,6 +368,7 @@ export default function ChatScreen() {
           <Ionicons name={isProcessing ? "hourglass-outline" : "send"} size={20} color="#fff" />
         </TouchableOpacity>
       </View>
+      </ImageBackground>
     </KeyboardAvoidingView>
   );
 }

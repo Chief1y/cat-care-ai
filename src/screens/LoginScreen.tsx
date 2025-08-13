@@ -1,38 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 type Props = {
   onNavigateToRegister: () => void;
+  onClose?: () => void;
 };
 
-export default function LoginScreen({ onNavigateToRegister }: Props) {
+export default function LoginScreen({ onNavigateToRegister, onClose }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
   
   const { colors } = useTheme();
   const { login } = useAuth();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
 
-  const handleLogin = async () => {
+    const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      if (Platform.OS === 'web') {
+        window.alert('Please fill in all fields');
+      } else {
+        Alert.alert('Error', 'Please fill in all fields');
+      }
       return;
     }
 
+    console.log('Attempting login with:', username.trim());
     setIsLoading(true);
     try {
       const success = await login(username.trim(), password);
+      console.log('Login result:', success);
       if (!success) {
-        Alert.alert('Login Failed', 'Invalid username or password');
+        if (Platform.OS === 'web') {
+          window.alert('Invalid username or password');
+        } else {
+          Alert.alert('Login Failed', 'Invalid username or password');
+        }
+      } else {
+        console.log('Login successful, should close auth screen');
+        // If there's an onClose callback, call it to close the auth screen
+        if (onClose) {
+          onClose();
+        }
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Login error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Something went wrong. Please try again.');
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -40,10 +63,20 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
+      <View style={[styles.content, { paddingTop: Platform.OS === 'web' ? 40 : insets.top + 40 }]}>
+        {/* Close button - only show if onClose is provided */}
+        {onClose && (
+          <TouchableOpacity 
+            style={[styles.closeButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={onClose}
+          >
+            <Ionicons name="close" size={24} color={colors.text as string} />
+          </TouchableOpacity>
+        )}
+
         {/* Header */}
         <View style={styles.header}>
           <Ionicons name="heart" size={48} color={colors.accent as string} />
@@ -65,6 +98,8 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
                 placeholderTextColor={colors.text as string + '60'}
                 autoCapitalize="none"
                 autoComplete="username"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
               />
             </View>
           </View>
@@ -74,6 +109,7 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
             <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="lock-closed-outline" size={20} color={colors.text as string} style={styles.inputIcon} />
               <TextInput
+                ref={passwordRef}
                 style={[styles.input, { color: colors.text }]}
                 value={password}
                 onChangeText={setPassword}
@@ -81,6 +117,8 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
                 placeholderTextColor={colors.text as string + '60'}
                 secureTextEntry={!showPassword}
                 autoComplete="password"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -137,6 +175,18 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    zIndex: 10,
   },
   header: {
     alignItems: 'center',

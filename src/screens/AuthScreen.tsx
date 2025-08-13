@@ -16,7 +16,7 @@ interface RegistrationData {
   lastName?: string;
 }
 
-export default function AuthScreen() {
+export default function AuthScreen({ onClose }: { onClose?: () => void }) {
   const [currentStep, setCurrentStep] = useState<AuthStep>('login');
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     username: '',
@@ -58,6 +58,7 @@ export default function AuthScreen() {
         return (
           <LoginScreen
             onNavigateToRegister={handleNavigateToRegister}
+            onClose={onClose}
           />
         );
       

@@ -1,10 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function MapScreen() {
   const { colors } = useTheme();
+  const { user } = useAuth();
+  
+  if (!user) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.guestMessage}>
+          <Ionicons name="map-outline" size={64} color={colors.accent as string} />
+          <Text style={[styles.guestTitle, { color: colors.text }]}>Sign In Required</Text>
+          <Text style={[styles.guestSubtitle, { color: colors.text }]}>
+            Please sign in to access interactive maps and location-based services.
+          </Text>
+        </View>
+      </View>
+    );
+  }
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -209,5 +225,24 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  guestMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    opacity: 0.8,
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

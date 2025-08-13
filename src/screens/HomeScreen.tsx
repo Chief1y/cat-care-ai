@@ -1,27 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ImageBackground, Image } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const { user, pet } = useAuth();
+  const navigation = useNavigation();
+
+  // Theme-based background images
+  const backgroundImage = theme === 'light' 
+    ? require('../../assets/ChatGPThorizontal.png')
+    : require('../../assets/ChatGPThorizontal1.png');
 
   const handleMyPetPress = () => {
     if (pet) {
-      Alert.alert(
-        `${pet.name}'s Profile`,
-        `Name: ${pet.name}\nBreed: ${pet.breed}\nAge: ${pet.age} years`,
-        [{ text: 'OK' }]
-      );
+      navigation.navigate('PetProfile' as never);
     } else {
       Alert.alert('No Pet Found', 'Please add a pet to your profile.');
     }
   };
 
   const getWelcomeMessage = () => {
-    if (user?.type === 'doctor') {
+    if (!user) {
+      return {
+        title: 'Welcome to CatCare AI',
+        subtitle: 'Your AI assistant for cat health is available! Use the ChatBot button above to ask questions. Sign in to unlock additional features like finding nearby veterinarians and accessing doctor consultations.',
+        useTranscat: true as const
+      };
+    }
+
+    if (user.type === 'doctor') {
       return {
         title: `Welcome back, Dr. ${user.name.split(' ')[user.name.split(' ').length - 1]}`,
         subtitle: 'Access your recent consultations and help pet owners with their questions.',
@@ -29,11 +40,11 @@ export default function HomeScreen() {
       };
     } else {
       return {
-        title: pet ? `Welcome back, ${user?.name}!` : 'Welcome to CatCare AI',
+        title: pet ? `Welcome back, ${user.name}!` : 'Welcome to CatCare AI',
         subtitle: pet 
           ? `${pet.name} is lucky to have you! Use our AI assistant for health advice and find nearby veterinarians.`
           : 'Your AI assistant for cat health. Use the ChatBot button above to ask questions about your cat\'s health and get helpful advice.',
-        icon: 'heart' as const
+        useTranscat: true as const
       };
     }
   };
@@ -41,9 +52,22 @@ export default function HomeScreen() {
   const welcomeMessage = getWelcomeMessage();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ImageBackground
+      source={backgroundImage}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.05 }}
+    >
       <View style={[styles.welcomeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ionicons name={welcomeMessage.icon} size={48} color={colors.accent as string} style={styles.icon} />
+        {welcomeMessage.useTranscat ? (
+          <Image 
+            source={require('../../assets/transcat2.png')} 
+            style={[styles.icon, { width: 48, height: 48, tintColor: colors.accent as string }]} 
+            resizeMode="contain"
+          />
+        ) : (
+          <Ionicons name={welcomeMessage.icon} size={48} color={colors.accent as string} style={styles.icon} />
+        )}
         <Text style={[styles.title, { color: colors.text }]}>{welcomeMessage.title}</Text>
         <Text style={[styles.subtitle, { color: colors.text }]}>
           {welcomeMessage.subtitle}
@@ -79,7 +103,7 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const mockDoctors = [
@@ -17,6 +18,21 @@ const mockDoctors = [
 
 export default function DoctorsScreen() {
   const { colors } = useTheme();
+  const { user } = useAuth();
+  
+  if (!user) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.guestMessage}>
+          <Ionicons name="person-outline" size={64} color={colors.accent as string} />
+          <Text style={[styles.guestTitle, { color: colors.text }]}>Sign In Required</Text>
+          <Text style={[styles.guestSubtitle, { color: colors.text }]}>
+            Please sign in to access doctor consultations and medical services.
+          </Text>
+        </View>
+      </View>
+    );
+  }
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -146,5 +162,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  guestMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    opacity: 0.8,
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

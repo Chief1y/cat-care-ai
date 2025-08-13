@@ -7,6 +7,7 @@ import ChatScreen from '../screens/ChatScreen';
 import MapScreen from '../screens/MapScreen';
 import VetsScreen from '../screens/VetsScreen';
 import DoctorsScreen from '../screens/DoctorsScreen';
+import PetProfileScreen from '../screens/PetProfileScreen';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { TopBar } from '../ui/TopBar';
@@ -38,6 +39,7 @@ function MainStack({ rightPanelVisible, setRightPanelVisible }: AppNavigatorProp
       <Stack.Screen name="Map" component={MapScreen} />
       <Stack.Screen name="Vets" component={VetsScreen} />
       <Stack.Screen name="Doctors" component={DoctorsScreen} />
+      <Stack.Screen name="PetProfile" component={PetProfileScreen} />
     </Stack.Navigator>
   );
 }

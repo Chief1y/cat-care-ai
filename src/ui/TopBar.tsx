@@ -4,7 +4,7 @@ import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 type Props = NativeStackHeaderProps & {
   rightPanelVisible: boolean;
@@ -14,12 +14,94 @@ type Props = NativeStackHeaderProps & {
 export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPanelVisible }) => {
   const { colors, theme } = useTheme();
   const nav = useNavigation();
-  const insets = useSafeAreaInsets();
-
-  // Fallback for safe area insets if not available
-  const safeTop = insets?.top || 20;
 
   const isChat = route?.name === 'Chat';
+
+  // Completely separate rendering for web vs mobile
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <StatusBar 
+          barStyle={theme === 'light' ? 'dark-content' : 'light-content'} 
+          backgroundColor={colors.card as string}
+        />
+        <View style={[
+          {
+            height: 60,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottomWidth: 0.5,
+            position: 'relative',
+            top: 0,
+            backgroundColor: colors.card,
+            borderBottomColor: colors.border,
+          }
+        ]}>
+          {/* Left side - Home/Back button */}
+          <TouchableOpacity
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => {
+              if (rightPanelVisible) return;
+              if (isChat) {
+                nav.goBack();
+              } else {
+                nav.dispatch(DrawerActions.openDrawer());
+              }
+            }}
+          >
+            <Ionicons 
+              name={isChat ? "arrow-back-outline" : "home-outline"} 
+              size={24} 
+              color={colors.text as string} 
+            />
+          </TouchableOpacity>
+
+          {/* Center - ChatBot button */}
+          <TouchableOpacity
+            style={{
+              paddingHorizontal: 20,
+              paddingVertical: 8,
+              borderRadius: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.accent,
+            }}
+            onPress={() => nav.navigate('Chat' as never)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-outline" size={18} color="#fff" style={{marginRight: 6}} />
+            <Text style={{color: '#fff', fontWeight: '700', fontSize: 16}}>ChatBot</Text>
+          </TouchableOpacity>
+
+          {/* Right side - Menu button */}
+          <TouchableOpacity
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => setRightPanelVisible(true)}
+          >
+            <MaterialIcons name="menu" size={26} color={colors.text as string} />
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  }
+
+  // Mobile rendering with safe areas
+  const insets = useSafeInsets();
+  const safeTop = insets?.top || 20;
 
   return (
     <>
@@ -28,48 +110,56 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
         backgroundColor={colors.card as string}
       />
       <View style={[
-        styles.container, 
-        { 
+        styles.container,
+        {
           backgroundColor: colors.card,
           borderBottomColor: colors.border,
+          paddingTop: safeTop + 8,
+          height: safeTop + 52,
         }
       ]}>
         {/* Left side - Home/Back button */}
-        <TouchableOpacity
-          style={styles.left}
-          onPress={() => {
-            if (rightPanelVisible) return; // Prevent drawer open when right panel is open
-            if (isChat) {
-              nav.goBack();
-            } else {
-              nav.dispatch(DrawerActions.openDrawer());
-            }
-          }}
-        >
-          <Ionicons 
-            name={isChat ? "arrow-back-outline" : "home-outline"} 
-            size={24} 
-            color={colors.text as string} 
-          />
-        </TouchableOpacity>
+        <View style={styles.sideContainer}>
+          <TouchableOpacity
+            style={styles.left}
+            onPress={() => {
+              if (rightPanelVisible) return;
+              if (isChat) {
+                nav.goBack();
+              } else {
+                nav.dispatch(DrawerActions.openDrawer());
+              }
+            }}
+          >
+            <Ionicons 
+              name={isChat ? "arrow-back-outline" : "home-outline"} 
+              size={24} 
+              color={colors.text as string} 
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* Center - ChatBot button */}
-        <TouchableOpacity
-          style={[styles.centerButton, { backgroundColor: colors.accent }]}
-          onPress={() => nav.navigate('Chat' as never)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chatbubble-outline" size={18} color="#fff" style={styles.chatIcon} />
-          <Text style={styles.centerText}>ChatBot</Text>
-        </TouchableOpacity>
+        <View style={styles.centerContainer}>
+          <TouchableOpacity
+            style={[styles.centerButton, { backgroundColor: colors.accent }]}
+            onPress={() => nav.navigate('Chat' as never)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color="#fff" style={styles.chatIcon} />
+            <Text style={styles.centerText}>ChatBot</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Right side - Menu button */}
-        <TouchableOpacity
-          style={styles.right}
-          onPress={() => setRightPanelVisible(true)}
-        >
-          <MaterialIcons name="menu" size={26} color={colors.text as string} />
-        </TouchableOpacity>
+        <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}>
+          <TouchableOpacity
+            style={styles.right}
+            onPress={() => setRightPanelVisible(true)}
+          >
+            <MaterialIcons name="menu" size={26} color={colors.text as string} />
+          </TouchableOpacity>
+        </View>
       </View>
     </>
   );
@@ -77,9 +167,7 @@ export const TopBar: React.FC<Props> = ({ route, rightPanelVisible, setRightPane
 
 const styles = StyleSheet.create({
   container: {
-    height: Platform.OS === 'ios' ? 88 : 64,
-    paddingTop: Platform.OS === 'ios' ? 36 : 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -91,35 +179,46 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  sideContainer: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
   left: {
     width: 44,
-    alignItems: 'flex-start',
+    height: 44,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   right: {
     width: 44,
-    alignItems: 'flex-end',
+    height: 44,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   centerButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 36,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   chatIcon: {
-    marginRight: 6,
+    marginRight: 4,
   },
   centerText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

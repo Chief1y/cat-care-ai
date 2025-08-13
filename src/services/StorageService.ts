@@ -1,4 +1,59 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Web-compatible storage wrapper
+const WebStorage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.error('localStorage getItem error:', error);
+        return null;
+      }
+    }
+    return AsyncStorage.getItem(key);
+  },
+
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.setItem(key, value);
+        return;
+      } catch (error) {
+        console.error('localStorage setItem error:', error);
+        throw error;
+      }
+    }
+    return AsyncStorage.setItem(key, value);
+  },
+
+  async removeItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.removeItem(key);
+        return;
+      } catch (error) {
+        console.error('localStorage removeItem error:', error);
+        throw error;
+      }
+    }
+    return AsyncStorage.removeItem(key);
+  },
+
+  async multiRemove(keys: string[]): Promise<void> {
+    if (Platform.OS === 'web') {
+      try {
+        keys.forEach(key => localStorage.removeItem(key));
+        return;
+      } catch (error) {
+        console.error('localStorage multiRemove error:', error);
+        throw error;
+      }
+    }
+    return AsyncStorage.multiRemove(keys);
+  }
+};
 
 export interface User {
   id: string;
@@ -41,7 +96,7 @@ export class StorageService {
     try {
       const users = await this.getUsers();
       users.push(user);
-      await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      await WebStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     } catch (error) {
       console.error('Error saving user:', error);
       throw error;
@@ -50,7 +105,7 @@ export class StorageService {
 
   static async getUsers(): Promise<User[]> {
     try {
-      const usersJson = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
+      const usersJson = await WebStorage.getItem(STORAGE_KEYS.USERS);
       return usersJson ? JSON.parse(usersJson) : [];
     } catch (error) {
       console.error('Error getting users:', error);
@@ -64,21 +119,27 @@ export class StorageService {
   }
 
   static async validateLogin(username: string, password: string): Promise<User | null> {
-    const user = await this.findUserByUsername(username);
+    console.log('Validating login for:', username);
+    const users = await this.getUsers();
+    console.log('Available users:', users.map(u => ({ username: u.username, type: u.type })));
+    const user = users.find(user => user.username === username);
+    console.log('Found user:', user ? { username: user.username, type: user.type } : 'null');
     if (user && user.password === password) {
+      console.log('Password matches, login successful');
       return user;
     }
+    console.log('Login failed - user not found or password mismatch');
     return null;
   }
 
   // Current User Session
   static async setCurrentUser(user: User): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+    await WebStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
   }
 
   static async getCurrentUser(): Promise<User | null> {
     try {
-      const userJson = await AsyncStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      const userJson = await WebStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       return userJson ? JSON.parse(userJson) : null;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -87,7 +148,7 @@ export class StorageService {
   }
 
   static async logout(): Promise<void> {
-    await AsyncStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    await WebStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   }
 
   // Pet Management
@@ -97,7 +158,7 @@ export class StorageService {
       // Remove existing pet for this owner (one pet per owner for now)
       const filteredPets = pets.filter(p => p.ownerId !== pet.ownerId);
       filteredPets.push(pet);
-      await AsyncStorage.setItem(STORAGE_KEYS.PETS, JSON.stringify(filteredPets));
+      await WebStorage.setItem(STORAGE_KEYS.PETS, JSON.stringify(filteredPets));
     } catch (error) {
       console.error('Error saving pet:', error);
       throw error;
@@ -106,7 +167,7 @@ export class StorageService {
 
   static async getPets(): Promise<Pet[]> {
     try {
-      const petsJson = await AsyncStorage.getItem(STORAGE_KEYS.PETS);
+      const petsJson = await WebStorage.getItem(STORAGE_KEYS.PETS);
       return petsJson ? JSON.parse(petsJson) : [];
     } catch (error) {
       console.error('Error getting pets:', error);
@@ -145,13 +206,13 @@ export class StorageService {
           duration: '18 min'
         }
       ];
-      await AsyncStorage.setItem(STORAGE_KEYS.DOCTOR_CALLS, JSON.stringify(mockCalls));
+      await WebStorage.setItem(STORAGE_KEYS.DOCTOR_CALLS, JSON.stringify(mockCalls));
     }
   }
 
   static async getDoctorCalls(): Promise<DoctorCall[]> {
     try {
-      const callsJson = await AsyncStorage.getItem(STORAGE_KEYS.DOCTOR_CALLS);
+      const callsJson = await WebStorage.getItem(STORAGE_KEYS.DOCTOR_CALLS);
       return callsJson ? JSON.parse(callsJson) : [];
     } catch (error) {
       console.error('Error getting doctor calls:', error);
@@ -162,8 +223,11 @@ export class StorageService {
   // Initialize demo users for testing
   static async initializeDemoUsers(): Promise<void> {
     try {
+      console.log('Initializing demo users...');
       const existingUsers = await this.getUsers();
+      console.log('Existing users:', existingUsers.length);
       if (existingUsers.length === 0) {
+        console.log('No existing users, creating demo users...');
         // Create demo doctor
         const doctorId = Date.now().toString() + '_doctor';
         const doctorUser: User = {
@@ -200,10 +264,12 @@ export class StorageService {
         const users = [doctorUser, petOwnerUser];
         const pets = [demoPet];
         
-        await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-        await AsyncStorage.setItem(STORAGE_KEYS.PETS, JSON.stringify(pets));
+        await WebStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        await WebStorage.setItem(STORAGE_KEYS.PETS, JSON.stringify(pets));
 
-        console.log('Demo users initialized successfully');
+        console.log('Demo users initialized successfully:', users.map(u => ({ username: u.username, type: u.type })));
+      } else {
+        console.log('Demo users already exist');
       }
     } catch (error) {
       console.error('Error initializing demo users:', error);
@@ -212,6 +278,6 @@ export class StorageService {
 
   // Utility
   static async clearAllData(): Promise<void> {
-    await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    await WebStorage.multiRemove(Object.values(STORAGE_KEYS));
   }
 }

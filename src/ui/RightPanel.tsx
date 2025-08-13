@@ -1,21 +1,49 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, View, Text, TouchableOpacity, StyleSheet, Dimensions, Easing } from 'react-native';
+import { Animated, View, Text, TouchableOpacity, StyleSheet, Dimensions, Easing, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 const { width } = Dimensions.get('window');
 const PANEL_WIDTH = Math.min(300, width * 0.8);
 
-export default function RightPanel({ visible, onClose } : { visible: boolean; onClose: () => void; }) {
+export default function RightPanel({ 
+  visible, 
+  onClose, 
+  onShowLogin 
+}: { 
+  visible: boolean; 
+  onClose: () => void; 
+  onShowLogin?: () => void;
+}) {
   const { theme, toggleTheme, colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { user, logout } = useAuth();
+  const { resetChat } = useChat();
+  const insets = useSafeInsets();
   const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(false);
 
   // Fallback for safe area insets if not available
   const safeTop = insets?.top || 20;
+
+  const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (confirmed) {
+        resetChat(); // Reset chat before logout
+        logout();
+        onClose();
+      }
+    } else {
+      // For mobile platforms, we'd use Alert.alert but for now just logout directly
+      resetChat(); // Reset chat before logout
+      logout();
+      onClose();
+    }
+  };
 
   useEffect(() => {
     if (visible) {
@@ -88,17 +116,38 @@ export default function RightPanel({ visible, onClose } : { visible: boolean; on
         </View>
 
         <View style={styles.content}>
-          <TouchableOpacity style={[styles.item, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.itemText, { color: colors.text }]}>Login</Text>
-            <Ionicons name="log-in-outline" size={20} color={colors.text as string} />
-          </TouchableOpacity>
+          {/* Login Button - only show if not logged in */}
+          {!user && onShowLogin && (
+            <>
+              <TouchableOpacity 
+                style={[styles.item, { borderBottomColor: colors.border }]}
+                onPress={() => {
+                  onClose();
+                  onShowLogin();
+                }}
+              >
+                <Text style={[styles.itemText, { color: colors.text }]}>Login</Text>
+                <Ionicons name="log-in-outline" size={20} color={colors.text as string} />
+              </TouchableOpacity>
+              
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            </>
+          )}
 
-          <TouchableOpacity style={[styles.item, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.itemText, { color: colors.text }]}>Register</Text>
-            <Ionicons name="person-add-outline" size={20} color={colors.text as string} />
-          </TouchableOpacity>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          {/* Sign Out Button - only show if logged in */}
+          {user && (
+            <>
+              <TouchableOpacity 
+                style={[styles.item, { borderBottomColor: colors.border }]}
+                onPress={handleLogout}
+              >
+                <Text style={[styles.itemText, { color: colors.text }]}>Sign Out</Text>
+                <Ionicons name="log-out-outline" size={20} color={colors.text as string} />
+              </TouchableOpacity>
+              
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            </>
+          )}
 
           <TouchableOpacity style={[styles.item, { borderBottomColor: colors.border }]}>
             <Text style={[styles.itemText, { color: colors.text }]}>Language</Text>

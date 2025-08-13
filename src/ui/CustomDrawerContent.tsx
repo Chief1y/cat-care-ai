@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
+  Image,
 } from 'react-native';
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,33 +15,23 @@ import { useAuth } from '../context/AuthContext';
 export default function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { colors } = useTheme();
   const { navigation } = props;
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-          }
-        }
-      ]
-    );
-  };
-
-  // Different menu items based on user type
+  // Different menu items based on user type and login status
   const getMenuItems = () => {
+    if (!user) {
+      // Guest user - only home
+      return [
+        { name: 'Home', icon: 'home-outline', screen: 'Home' },
+      ];
+    }
+
     const baseItems = [
       { name: 'Home', icon: 'home-outline', screen: 'Home' },
       { name: 'Map', icon: 'map-outline', screen: 'Map' },
     ];
 
-    if (user?.type === 'doctor') {
+    if (user.type === 'doctor') {
       return [
         ...baseItems,
         { name: 'Recent Calls', icon: 'call-outline', screen: 'Doctors' },
@@ -56,14 +46,20 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
   };
 
   const getUserTitle = () => {
-    if (user?.type === 'doctor') {
+    if (!user) {
+      return 'Guest User';
+    }
+    if (user.type === 'doctor') {
       return `Dr. ${user.name}`;
     }
-    return user?.name || 'Pet Owner';
+    return user.name || 'Pet Owner';
   };
 
   const getUserSubtitle = () => {
-    return user?.type === 'doctor' ? 'Veterinarian' : 'Pet Health Assistant';
+    if (!user) {
+      return 'Sign in to unlock all features';
+    }
+    return user.type === 'doctor' ? 'Veterinarian' : 'Pet Health Assistant';
   };
 
   return (
@@ -71,11 +67,17 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
       <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollView}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
-          <Ionicons 
-            name={user?.type === 'doctor' ? 'medical' : 'heart'} 
-            size={32} 
-            color="#fff" 
-          />
+          {!user ? (
+            <Ionicons name="person-outline" size={32} color="#fff" />
+          ) : user.type === 'doctor' ? (
+            <Ionicons name="medical" size={32} color="#fff" />
+          ) : (
+            <Image 
+              source={require('../../assets/transcat1.png')} 
+              style={{ width: 32, height: 32, tintColor: '#fff' }} 
+              resizeMode="contain"
+            />
+          )}
           <Text style={styles.headerTitle}>{getUserTitle()}</Text>
           <Text style={styles.headerSubtitle}>{getUserSubtitle()}</Text>
         </View>
@@ -96,16 +98,6 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
               <Ionicons name="chevron-forward-outline" size={20} color={colors.text as string} />
             </TouchableOpacity>
           ))}
-
-          {/* Logout Button */}
-          <TouchableOpacity
-            style={[styles.menuItem, styles.logoutItem, { borderBottomColor: colors.border }]}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
-            <Text style={[styles.menuText, styles.logoutText]}>Sign Out</Text>
-            <Ionicons name="chevron-forward-outline" size={20} color="#FF6B6B" />
-          </TouchableOpacity>
         </View>
 
         {/* Footer */}
@@ -157,16 +149,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     gap: 16,
   },
-  logoutItem: {
-    marginTop: 8,
-  },
   menuText: {
     fontSize: 16,
     fontWeight: '500',
     flex: 1,
-  },
-  logoutText: {
-    color: '#FF6B6B',
   },
   footer: {
     padding: 16,

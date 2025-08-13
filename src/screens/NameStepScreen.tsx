@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvo
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 type Props = {
   credentials: { username: string; password: string; userType: 'petowner' | 'doctor' };
@@ -18,36 +18,51 @@ export default function NameStepScreen({ credentials, onNavigateToPetStep, onBac
   
   const { colors } = useTheme();
   const { register } = useAuth();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
 
   const handleContinue = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Error', 'Please enter your full name');
+      if (Platform.OS === 'web') {
+        window.alert('Please enter your full name');
+      } else {
+        Alert.alert('Error', 'Please enter your full name');
+      }
       return;
     }
 
     if (credentials.userType === 'doctor') {
-      // For doctors, complete registration here
+      // For doctors, complete registration
       setIsLoading(true);
       try {
-        const success = await register({
+        const userData = {
           username: credentials.username,
           password: credentials.password,
           name: `${firstName.trim()} ${lastName.trim()}`,
-          type: credentials.userType === 'doctor' ? 'doctor' : 'pet_owner'
-        });
+          type: 'doctor' as const
+        };
+        
+        const success = await register(userData);
         
         if (success) {
-          Alert.alert(
-            'Registration Successful!', 
-            'Welcome to CatCare AI! You can now access the veterinarian dashboard.',
-            [{ text: 'OK' }]
-          );
+          if (Platform.OS === 'web') {
+            window.alert('Registration successful! You are now logged in.');
+          } else {
+            Alert.alert('Success', 'Registration successful! You are now logged in.');
+          }
         } else {
-          Alert.alert('Registration Failed', 'Username already exists. Please choose a different username.');
+          if (Platform.OS === 'web') {
+            window.alert('Registration failed. Username might already exist.');
+          } else {
+            Alert.alert('Error', 'Registration failed. Username might already exist.');
+          }
         }
       } catch (error) {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        console.error('Registration error:', error);
+        if (Platform.OS === 'web') {
+          window.alert('Something went wrong. Please try again.');
+        } else {
+          Alert.alert('Error', 'Something went wrong. Please try again.');
+        }
       } finally {
         setIsLoading(false);
       }

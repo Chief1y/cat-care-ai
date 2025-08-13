@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
-export type ChatMessage = { 
-  id: string; 
-  role: 'user' | 'bot' | 'thinking'; 
+export type ChatMessage = {
+  id: string;
+  role: "user" | "bot" | "thinking";
   text: string;
   confidence?: number;
-  urgency?: 'low' | 'medium' | 'high' | 'emergency';
+  urgency?: "low" | "medium" | "high" | "emergency";
   recommendations?: string[];
   doctorInfo?: {
     id: number;
@@ -22,17 +22,18 @@ type ChatContextType = {
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   refreshChat: () => void;
+  resetChat: () => void;
   hasResponses: boolean;
 };
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 const INITIAL_MESSAGE: ChatMessage = {
-  id: 'welcome', 
-  role: 'bot', 
-  text: '🩺 Welcome to CatCare AI! I\'m your intelligent veterinary assistant powered by advanced diagnostic algorithms. Describe your cat\'s symptoms and I\'ll provide professional-grade analysis and recommendations.',
+  id: "welcome", 
+  role: "bot", 
+  text: "🩺 Welcome to CatCare AI! I am your intelligent veterinary assistant powered by advanced diagnostic algorithms. Describe your cat symptoms and I will provide professional-grade analysis and recommendations.",
   confidence: 100,
-  urgency: 'low'
+  urgency: "low"
 };
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
@@ -40,20 +41,25 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const refreshChat = () => {
-    console.log('ChatContext: Refreshing chat');
+    console.log("ChatContext: Refreshing chat...");
     const newWelcomeMessage: ChatMessage = {
-      id: 'welcome-' + Date.now(), 
-      role: 'bot', 
-      text: '🩺 Welcome to CatCare AI! I\'m your intelligent veterinary assistant powered by advanced diagnostic algorithms. Describe your cat\'s symptoms and I\'ll provide professional-grade analysis and recommendations.',
+      id: "welcome-" + Date.now(), 
+      role: "bot", 
+      text: "🩺 Welcome to CatCare AI! I am your intelligent veterinary assistant powered by advanced diagnostic algorithms. Describe your cat symptoms and I will provide professional-grade analysis and recommendations.",
       confidence: 100,
-      urgency: 'low'
+      urgency: "low"
     };
     setMessages([newWelcomeMessage]);
     setIsProcessing(false);
-    console.log('ChatContext: Chat refreshed with new welcome message');
+    console.log("ChatContext: Chat refreshed with new welcome message");
   };
 
-  // Check if there are any user messages or bot responses beyond the welcome message
+  const resetChat = () => {
+    console.log("ChatContext: Resetting chat completely");
+    setMessages([INITIAL_MESSAGE]);
+    setIsProcessing(false);
+  };
+
   const hasResponses = messages.length > 1;
 
   return (
@@ -63,6 +69,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       isProcessing, 
       setIsProcessing, 
       refreshChat,
+      resetChat,
       hasResponses 
     }}>
       {children}
@@ -72,8 +79,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
 export const useChat = () => {
   const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat must be used within a ChatProvider');
+  if (context === undefined) {
+    throw new Error("useChat must be used within a ChatProvider");
   }
   return context;
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '../hooks/useSafeInsets';
 
 type Props = {
   onNavigateToLogin: () => void;
@@ -18,7 +18,7 @@ export default function RegisterScreen({ onNavigateToLogin, onNavigateToNameStep
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
 
   const handleContinue = () => {
     if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
