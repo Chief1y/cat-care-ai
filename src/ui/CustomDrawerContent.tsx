@@ -5,35 +5,84 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { colors } = useTheme();
   const { navigation } = props;
+  const { user, logout } = useAuth();
 
-  const menuItems = [
-    { name: 'Home', icon: 'home-outline', screen: 'Home' },
-    { name: 'Map', icon: 'map-outline', screen: 'Map' },
-    { name: 'Nearby Vets', icon: 'medical-outline', screen: 'Vets' },
-    { name: 'Doctors', icon: 'person-outline', screen: 'Doctors' },
-  ];
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        }
+      ]
+    );
+  };
+
+  // Different menu items based on user type
+  const getMenuItems = () => {
+    const baseItems = [
+      { name: 'Home', icon: 'home-outline', screen: 'Home' },
+      { name: 'Map', icon: 'map-outline', screen: 'Map' },
+    ];
+
+    if (user?.type === 'doctor') {
+      return [
+        ...baseItems,
+        { name: 'Recent Calls', icon: 'call-outline', screen: 'Doctors' },
+      ];
+    } else {
+      return [
+        ...baseItems,
+        { name: 'Nearby Vets', icon: 'medical-outline', screen: 'Vets' },
+        { name: 'Doctors', icon: 'person-outline', screen: 'Doctors' },
+      ];
+    }
+  };
+
+  const getUserTitle = () => {
+    if (user?.type === 'doctor') {
+      return `Dr. ${user.name}`;
+    }
+    return user?.name || 'Pet Owner';
+  };
+
+  const getUserSubtitle = () => {
+    return user?.type === 'doctor' ? 'Veterinarian' : 'Pet Health Assistant';
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.card }]}>
       <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollView}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
-          <Ionicons name="heart" size={32} color="#fff" />
-          <Text style={styles.headerTitle}>CatCare AI</Text>
-          <Text style={styles.headerSubtitle}>Pet Health Assistant</Text>
+          <Ionicons 
+            name={user?.type === 'doctor' ? 'medical' : 'heart'} 
+            size={32} 
+            color="#fff" 
+          />
+          <Text style={styles.headerTitle}>{getUserTitle()}</Text>
+          <Text style={styles.headerSubtitle}>{getUserSubtitle()}</Text>
         </View>
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
-          {menuItems.map((item, index) => (
+          {getMenuItems().map((item, index) => (
             <TouchableOpacity
               key={index}
               style={[styles.menuItem, { borderBottomColor: colors.border }]}
@@ -47,12 +96,22 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
               <Ionicons name="chevron-forward-outline" size={20} color={colors.text as string} />
             </TouchableOpacity>
           ))}
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={[styles.menuItem, styles.logoutItem, { borderBottomColor: colors.border }]}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
+            <Text style={[styles.menuText, styles.logoutText]}>Sign Out</Text>
+            <Ionicons name="chevron-forward-outline" size={20} color="#FF6B6B" />
+          </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Text style={[styles.footerText, { color: colors.text }]}>
-            Version 1.0.0
+            CatCare AI v1.0.0
           </Text>
         </View>
       </DrawerContentScrollView>
@@ -98,10 +157,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     gap: 16,
   },
+  logoutItem: {
+    marginTop: 8,
+  },
   menuText: {
     fontSize: 16,
     fontWeight: '500',
     flex: 1,
+  },
+  logoutText: {
+    color: '#FF6B6B',
   },
   footer: {
     padding: 16,
