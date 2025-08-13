@@ -246,7 +246,7 @@ export default function ChatScreen() {
                     onPress={() => navigation.navigate('Doctors' as never)}
                   >
                     <View style={styles.doctorInfo}>
-                      <Text style={[styles.doctorName, { color: colors.primary }]}>
+                      <Text style={[styles.doctorName, { color: colors.text }]}>
                         {item.doctorInfo.name}
                       </Text>
                       <Text style={[styles.doctorSpecialty, { color: colors.text }]}>
