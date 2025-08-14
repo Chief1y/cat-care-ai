@@ -16,23 +16,6 @@
   *by [Petixio](https://github.com/Chief1y)*
   
   *Connecting cat owners with instant AI diagnostics and professional veterinary care*
-</div>art Veterinary Care Assistant
-
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/transcat1.png">
-    <source media="(prefers-color-scheme: light)" srcset="./assets/transcat.png">
-    <img src="./assets/transcat.png" alt="CatCareAI Logo" width="120" height="120"/>
-  </picture>
-  
-  [![React Native](https://img.shields.io/badge/React%20Native-0.79.5-blue.svg)](https://reactnative.dev/)
-  [![Expo](https://img.shields.io/badge/Expo-53.0.20-black.svg)](https://expo.dev/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-  
-  **AI-Powered Cat Care & Veterinary Consultation Platform**
-  
-  *Connecting cat owners with instant AI diagnostics and professional veterinary care*
 </div>
 
 ---
