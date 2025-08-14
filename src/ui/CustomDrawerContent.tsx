@@ -160,6 +160,9 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
           <Text style={[styles.footerText, { color: colors.text }]}>
             CatCare AI v1.0.0
           </Text>
+          <Text style={[styles.footerCompany, { color: colors.text }]}>
+            by Petixio
+          </Text>
         </View>
       </DrawerContentScrollView>
     </SafeAreaView>
@@ -218,6 +221,12 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     opacity: 0.6,
+  },
+  footerCompany: {
+    fontSize: 10,
+    opacity: 0.5,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   subscriptionItem: {
     backgroundColor: 'rgba(52, 152, 219, 0.08)',
