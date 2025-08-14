@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, FlatList, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated, Keyboard, ImageBackground } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useChat, ChatMessage } from '../context/ChatContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeInsets } from '../hooks/useSafeInsets';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +10,7 @@ import { SmartVetAI, AIResponse } from '../services/SmartVetAI';
 
 export default function ChatScreen() {
   const { messages, setMessages, isProcessing, setIsProcessing, refreshChat, hasResponses } = useChat();
+  const { canMakeAIRequest, remainingFreeRequests, makeAIRequest, isSubscribed } = useSubscription();
   const [text, setText] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const { colors, theme } = useTheme();
@@ -99,6 +101,54 @@ export default function ChatScreen() {
   const send = async () => {
     if (!text.trim() || isProcessing) return;
     
+    console.log('🌐 ChatScreen send() called. State:', {
+      canMakeAIRequest,
+      remainingFreeRequests,
+      isSubscribed,
+      textLength: text.trim().length,
+      isProcessing
+    });
+    
+    // Direct check: if subscribed, allow. If free plan, check remaining requests
+    if (!isSubscribed && remainingFreeRequests <= 0) {
+      console.log('❌ Free user with no remaining requests');
+      
+      // Add a helpful system message to the chat
+      const systemMessage: ChatMessage = {
+        id: String(Date.now()),
+        role: 'bot',
+        text: "🎯 You've reached your 20 free AI request limit!\n\n✨ Upgrade to Premium for:\n• Unlimited AI consultations\n• Priority responses\n• Advanced health insights\n\n💳 Choose your plan:\n• Monthly: $4.99/month\n• Yearly: $39.99/year (33% off!)",
+        isUpgradeMessage: true // Flag this as an upgrade message
+      };
+      
+      setMessages(prev => [...prev, systemMessage]);
+      
+      // Show upgrade alert
+      Alert.alert(
+        'AI Request Limit Reached',
+        `You've used all your free AI requests. Upgrade to premium for unlimited requests!\n\nFree requests remaining: ${remainingFreeRequests}`,
+        [
+          { text: 'OK' },
+          { 
+            text: 'Upgrade Now', 
+            onPress: () => navigation.navigate('Subscription' as never) 
+          }
+        ]
+      );
+      return;
+    }
+
+    console.log('✅ Can proceed with AI request');
+    
+    // Attempt to make the AI request (will update usage)
+    const canProceed = await makeAIRequest();
+    console.log('🔄 makeAIRequest result:', canProceed);
+    
+    if (!canProceed) {
+      Alert.alert('Error', 'Unable to process request. Please try again.');
+      return;
+    }
+    
     const userMessage: ChatMessage = { 
       id: String(Date.now()), 
       role: 'user', 
@@ -108,6 +158,19 @@ export default function ChatScreen() {
     setMessages(prev => [...prev, userMessage]);
     setText('');
     setIsProcessing(true);
+
+    // Check if user is approaching their free limit (show warning at 2 requests remaining)
+    if (!isSubscribed && remainingFreeRequests <= 3 && remainingFreeRequests > 1) {
+      const warningMessage: ChatMessage = {
+        id: String(Date.now() + 1),
+        role: 'bot',
+        text: `⚠️ You have ${remainingFreeRequests - 1} free AI requests remaining.\n\nConsider upgrading to Premium to avoid interruptions in your pet's care! 🐾`
+      };
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, warningMessage]);
+      }, 1000); // Add warning after a short delay
+    }
 
     // Add thinking message
     const thinkingId = String(Date.now() + 1);
@@ -282,6 +345,28 @@ export default function ChatScreen() {
                   ))}
                 </View>
               )}
+            </View>
+          )}
+
+          {/* Upgrade Button for system upgrade messages */}
+          {!isUser && !isThinking && item.isUpgradeMessage && (
+            <View style={styles.upgradeContainer}>
+              <TouchableOpacity 
+                style={[styles.upgradeButton, { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                onPress={() => navigation.navigate('Subscription' as never)}
+              >
+                <View style={styles.upgradeButtonContent}>
+                  <Text style={styles.upgradeButtonText}>
+                    🚀 Upgrade Now
+                  </Text>
+                  <Text style={styles.upgradeButtonSubtext}>
+                    Continue your pet's care journey
+                  </Text>
+                </View>
+                <View style={styles.upgradeAction}>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" />
+                </View>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -534,5 +619,38 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  upgradeContainer: {
+    marginTop: 12,
+    paddingTop: 8,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  upgradeButtonContent: {
+    flex: 1,
+  },
+  upgradeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  upgradeButtonSubtext: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.9,
+  },
+  upgradeAction: {
+    paddingLeft: 8,
   },
 });

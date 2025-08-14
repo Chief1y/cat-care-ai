@@ -52,12 +52,13 @@ export default function HomeScreen() {
   const welcomeMessage = getWelcomeMessage();
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={[styles.container, { backgroundColor: colors.background }]}
-      resizeMode="cover"
-      imageStyle={{ opacity: 0.05 }}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ImageBackground
+        source={backgroundImage}
+        style={[StyleSheet.absoluteFillObject, styles.backgroundImage]}
+        resizeMode="cover"
+        imageStyle={{ opacity: theme === 'light' ? 0.1 : 0.05 }}
+      />
       <View style={[styles.welcomeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {welcomeMessage.useTranscat ? (
           <Image 
@@ -103,7 +104,7 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -113,6 +114,9 @@ const styles = StyleSheet.create({
     padding: 20, 
     justifyContent: 'center', 
     alignItems: 'center' 
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
   },
   welcomeCard: {
     padding: 32,

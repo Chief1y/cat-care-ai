@@ -62,6 +62,17 @@ export interface User {
   name: string;
   type: 'pet_owner' | 'doctor';
   createdAt: string;
+  subscription?: {
+    type: 'free' | 'monthly' | 'yearly';
+    expiresAt?: string;
+    isActive: boolean;
+  };
+  usage?: {
+    aiRequests: number;
+    freeRequestsUsed: number;
+    lastFreeRequestReset: string;
+    hasUsedFirstConsult: boolean;
+  };
 }
 
 export interface Pet {
@@ -130,6 +141,26 @@ export class StorageService {
     }
     console.log('Login failed - user not found or password mismatch');
     return null;
+  }
+
+  static async updateUser(updatedUser: User): Promise<void> {
+    try {
+      const users = await this.getUsers();
+      const userIndex = users.findIndex(user => user.id === updatedUser.id);
+      if (userIndex !== -1) {
+        users[userIndex] = updatedUser;
+        await WebStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        
+        // Update current user session if it's the same user
+        const currentUser = await this.getCurrentUser();
+        if (currentUser && currentUser.id === updatedUser.id) {
+          await WebStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedUser));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
   }
 
   // Current User Session

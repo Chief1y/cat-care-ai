@@ -5,17 +5,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
   Image,
 } from 'react-native';
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 export default function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { colors } = useTheme();
   const { navigation } = props;
   const { user } = useAuth();
+  const { isSubscribed, remainingFreeRequests } = useSubscription();
 
   // Different menu items based on user type and login status
   const getMenuItems = () => {
@@ -34,13 +37,17 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
     if (user.type === 'doctor') {
       return [
         ...baseItems,
-        { name: 'Recent Calls', icon: 'call-outline', screen: 'Doctors' },
+        { name: 'Recent Calls', icon: 'call-outline', screen: 'RecentCalls' },
+        { name: 'Patient Records', icon: 'document-text-outline', screen: 'Home' },
+        { name: 'Schedule', icon: 'calendar-outline', screen: 'Home' },
       ];
     } else {
       return [
         ...baseItems,
         { name: 'Nearby Vets', icon: 'medical-outline', screen: 'Vets' },
         { name: 'Doctors', icon: 'person-outline', screen: 'Doctors' },
+        { name: 'Health Records', icon: 'heart-outline', screen: 'Home' },
+        { name: 'Reminders', icon: 'notifications-outline', screen: 'Home' },
       ];
     }
   };
@@ -98,6 +105,54 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
               <Ionicons name="chevron-forward-outline" size={20} color={colors.text as string} />
             </TouchableOpacity>
           ))}
+
+          {/* Subscription Menu Item - Only for pet owners */}
+          {user && user.type !== 'doctor' && (
+            <TouchableOpacity
+              style={[styles.menuItem, styles.subscriptionItem, { borderBottomColor: colors.border }]}
+              onPress={() => {
+                navigation.navigate('Main', { screen: 'Subscription' });
+                navigation.closeDrawer();
+              }}
+            >
+              <Ionicons 
+                name={isSubscribed ? "diamond" : "diamond-outline"} 
+                size={24} 
+                color={isSubscribed ? "#FFD700" : colors.accent as string} 
+              />
+              <View style={styles.subscriptionTextContainer}>
+                <Text style={[styles.menuText, { color: colors.text }]}>
+                  {isSubscribed ? 'Premium Plan' : 'Upgrade to Premium'}
+                </Text>
+                {!isSubscribed && (
+                  <Text style={[styles.subscriptionSubtext, { color: colors.accent }]}>
+                    {remainingFreeRequests} free requests left
+                  </Text>
+                )}
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color={colors.text as string} />
+            </TouchableOpacity>
+          )}
+
+          {/* Comments Menu Item - Only for doctors */}
+          {user && user.type === 'doctor' && (
+            <TouchableOpacity
+              style={[styles.menuItem, styles.commentsItem, { borderBottomColor: colors.border }]}
+              onPress={() => {
+                // TODO: Navigate to comments/reviews screen
+                navigation.closeDrawer();
+              }}
+            >
+              <Ionicons name="star-outline" size={24} color={colors.accent as string} />
+              <View style={styles.subscriptionTextContainer}>
+                <Text style={[styles.menuText, { color: colors.text }]}>Reviews & Feedback</Text>
+                <Text style={[styles.subscriptionSubtext, { color: colors.accent }]}>
+                  View patient reviews
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color={colors.text as string} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Footer */}
@@ -163,5 +218,35 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     opacity: 0.6,
+  },
+  subscriptionItem: {
+    backgroundColor: 'rgba(52, 152, 219, 0.08)',
+    borderRadius: 12,
+    marginVertical: 4,
+    marginHorizontal: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 152, 219, 0.2)',
+  },
+  subscriptionTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  subscriptionSubtext: {
+    fontSize: 12,
+    opacity: 0.8,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  commentsItem: {
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    borderRadius: 12,
+    marginVertical: 4,
+    marginHorizontal: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.2)',
   },
 });

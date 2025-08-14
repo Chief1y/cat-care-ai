@@ -37,11 +37,11 @@ export class SmartVetAI {
 
   // Available doctors database
   private static readonly AVAILABLE_DOCTORS = [
-    { id: 1, name: 'Dr. Sarah Johnson', specialty: 'Feline Internal Medicine', location: 'New York, USA', rating: 4.9 },
-    { id: 2, name: 'Dr. Hiroshi Tanaka', specialty: 'Veterinary Surgery', location: 'Tokyo, Japan', rating: 4.8 },
-    { id: 3, name: 'Dr. Emma Wilson', specialty: 'Emergency Pet Care', location: 'London, UK', rating: 4.7 },
-    { id: 4, name: 'Dr. Marco Silva', specialty: 'Cat Behavior', location: 'São Paulo, Brazil', rating: 4.9 },
-    { id: 5, name: 'Dr. Anna Mueller', specialty: 'Feline Cardiology', location: 'Berlin, Germany', rating: 4.8 },
+    { id: 1, name: 'Dr. Sarah Johnson', specialty: 'Feline Internal Medicine', location: 'New York, USA', rating: 4.9, price: 120 },
+    { id: 2, name: 'Dr. Hiroshi Tanaka', specialty: 'Veterinary Surgery', location: 'Tokyo, Japan', rating: 4.8, price: 180 },
+    { id: 3, name: 'Dr. Emma Wilson', specialty: 'Emergency Pet Care', location: 'London, UK', rating: 4.7, price: 200 },
+    { id: 4, name: 'Dr. Marco Silva', specialty: 'Cat Behavior', location: 'São Paulo, Brazil', rating: 4.9, price: 90 },
+    { id: 5, name: 'Dr. Anna Mueller', specialty: 'Feline Cardiology', location: 'Berlin, Germany', rating: 4.8, price: 150 },
   ];
 
   // 4 key situations with sophisticated responses

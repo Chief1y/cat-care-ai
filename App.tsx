@@ -4,6 +4,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { ChatProvider } from './src/context/ChatContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import RightPanel from './src/ui/RightPanel';
 import AuthScreen from './src/screens/AuthScreen';
 import { Platform } from 'react-native';
@@ -51,9 +52,11 @@ export default function App() {
     return (
       <ThemeProvider>
         <AuthProvider>
-          <ChatProvider>
-            <AppContent />
-          </ChatProvider>
+          <SubscriptionProvider>
+            <ChatProvider>
+              <AppContent />
+            </ChatProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     );
@@ -64,9 +67,11 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <ChatProvider>
-            <AppContent />
-          </ChatProvider>
+          <SubscriptionProvider>
+            <ChatProvider>
+              <AppContent />
+            </ChatProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

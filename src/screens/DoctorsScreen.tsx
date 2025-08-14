@@ -1,24 +1,53 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const mockDoctors = [
-  { id: 1, name: 'Dr. Sarah Johnson', location: 'New York, USA', specialty: 'Feline Internal Medicine', rating: 4.9, image: '🐱' },
-  { id: 2, name: 'Dr. Hiroshi Tanaka', location: 'Tokyo, Japan', specialty: 'Veterinary Surgery', rating: 4.8, image: '🏥' },
-  { id: 3, name: 'Dr. Emma Wilson', location: 'London, UK', specialty: 'Emergency Pet Care', rating: 4.7, image: '🚨' },
-  { id: 4, name: 'Dr. Marco Silva', location: 'São Paulo, Brazil', specialty: 'Cat Behavior', rating: 4.9, image: '🧠' },
-  { id: 5, name: 'Dr. Anna Mueller', location: 'Berlin, Germany', specialty: 'Feline Cardiology', rating: 4.8, image: '❤️' },
-  { id: 6, name: 'Dr. Chen Wei', location: 'Shanghai, China', specialty: 'Pet Dermatology', rating: 4.6, image: '🔬' },
-  { id: 7, name: 'Dr. Priya Patel', location: 'Mumbai, India', specialty: 'Feline Nutrition', rating: 4.7, image: '🥗' },
-  { id: 8, name: 'Dr. Jean Dubois', location: 'Paris, France', specialty: 'Cat Oncology', rating: 4.9, image: '🎗️' },
-  { id: 9, name: 'Dr. Lars Andersen', location: 'Copenhagen, Denmark', specialty: 'Pet Dental Care', rating: 4.8, image: '🦷' },
+  { id: 1, name: 'Dr. Sarah Johnson', location: 'New York, USA', specialty: 'Feline Internal Medicine', rating: 4.9, image: '🐱', price: 120 },
+  { id: 2, name: 'Dr. Hiroshi Tanaka', location: 'Tokyo, Japan', specialty: 'Veterinary Surgery', rating: 4.8, image: '🏥', price: 180 },
+  { id: 3, name: 'Dr. Emma Wilson', location: 'London, UK', specialty: 'Emergency Pet Care', rating: 4.7, image: '🚨', price: 200 },
+  { id: 4, name: 'Dr. Marco Silva', location: 'São Paulo, Brazil', specialty: 'Cat Behavior', rating: 4.9, image: '🧠', price: 90 },
+  { id: 5, name: 'Dr. Anna Mueller', location: 'Berlin, Germany', specialty: 'Feline Cardiology', rating: 4.8, image: '❤️', price: 150 },
+  { id: 6, name: 'Dr. Chen Wei', location: 'Shanghai, China', specialty: 'Pet Dermatology', rating: 4.6, image: '🔬', price: 110 },
+  { id: 7, name: 'Dr. Priya Patel', location: 'Mumbai, India', specialty: 'Feline Nutrition', rating: 4.7, image: '🥗', price: 85 },
+  { id: 8, name: 'Dr. Jean Dubois', location: 'Paris, France', specialty: 'Cat Oncology', rating: 4.9, image: '🎗️', price: 220 },
+  { id: 9, name: 'Dr. Lars Andersen', location: 'Copenhagen, Denmark', specialty: 'Pet Dental Care', rating: 4.8, image: '🦷', price: 130 },
 ];
 
 export default function DoctorsScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { hasUsedFirstConsult, markFirstConsultUsed } = useSubscription();
+
+  const getDiscountedPrice = (originalPrice: number) => {
+    return Math.round(originalPrice * 0.3); // 70% off = 30% of original price
+  };
+
+  const handleBookConsultation = async (doctor: any) => {
+    const isFirstConsult = !hasUsedFirstConsult;
+    const price = isFirstConsult ? getDiscountedPrice(doctor.price) : doctor.price;
+    const savings = isFirstConsult ? doctor.price - price : 0;
+    
+    Alert.alert(
+      'Book Online Conversation',
+      `Doctor: ${doctor.name}\n${isFirstConsult ? `Special First Consult Price: $${price} (Save $${savings}!)` : `Consultation Fee: $${doctor.price}`}\n\nProceed with booking?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Book Now', 
+          onPress: async () => {
+            if (isFirstConsult) {
+              await markFirstConsultUsed();
+            }
+            Alert.alert('Booking Confirmed', `Your consultation with ${doctor.name} has been booked!`);
+          }
+        }
+      ]
+    );
+  };
   
   if (!user) {
     return (
@@ -43,33 +72,67 @@ export default function DoctorsScreen() {
           <Text style={[styles.headerSubtitle, { color: colors.text }]}>Connect with specialized veterinarians</Text>
         </View>
         
-        {mockDoctors.map((doctor) => (
-          <TouchableOpacity 
-            key={doctor.id} 
-            style={[styles.doctorCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <View style={styles.doctorHeader}>
-              <Text style={styles.doctorImage}>{doctor.image}</Text>
-              <View style={styles.doctorInfo}>
-                <Text style={[styles.doctorName, { color: colors.text }]}>{doctor.name}</Text>
-                <Text style={[styles.doctorLocation, { color: colors.text }]}>{doctor.location}</Text>
-                <Text style={[styles.doctorSpecialty, { color: colors.accent }]}>{doctor.specialty}</Text>
+        {mockDoctors.map((doctor) => {
+          const isFirstConsult = !hasUsedFirstConsult;
+          const discountedPrice = getDiscountedPrice(doctor.price);
+          
+          return (
+            <TouchableOpacity 
+              key={doctor.id} 
+              style={[styles.doctorCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <View style={styles.doctorHeader}>
+                <Text style={styles.doctorImage}>{doctor.image}</Text>
+                <View style={styles.doctorInfo}>
+                  <Text style={[styles.doctorName, { color: colors.text }]}>{doctor.name}</Text>
+                  <Text style={[styles.doctorLocation, { color: colors.text }]}>{doctor.location}</Text>
+                  <Text style={[styles.doctorSpecialty, { color: colors.accent }]}>{doctor.specialty}</Text>
+                  
+                  {/* Pricing Display */}
+                  <View style={styles.pricingContainer}>
+                    {isFirstConsult ? (
+                      <View style={styles.firstConsultPricing}>
+                        <Text style={[styles.originalPrice, { color: colors.text }]}>
+                          ${doctor.price}
+                        </Text>
+                        <Text style={[styles.discountedPrice, { color: '#FF6B6B' }]}>
+                          ${discountedPrice}
+                        </Text>
+                        <View style={[styles.discountBadge, { backgroundColor: '#FF6B6B' }]}>
+                          <Text style={styles.discountText}>70% OFF</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={[styles.regularPrice, { color: colors.text }]}>
+                        ${doctor.price}
+                      </Text>
+                    )}
+                    <Text style={[styles.firstConsultNote, { color: colors.accent }]}>
+                      {isFirstConsult ? 'First consultation special!' : 'Per consultation'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={16} color="#FFD700" />
+                  <Text style={[styles.rating, { color: colors.text }]}>{doctor.rating}</Text>
+                </View>
               </View>
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={[styles.rating, { color: colors.text }]}>{doctor.rating}</Text>
+              <View style={[styles.actionButtons]}>
+                <TouchableOpacity 
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  onPress={() => handleBookConsultation(doctor)}
+                >
+                  <Ionicons name="videocam" size={16} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.buttonText}>Book Online Conversation</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="person" size={16} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.buttonText}>View Profile</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-            <View style={[styles.actionButtons]}>
-              <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]}>
-                <Text style={styles.buttonText}>Book Consultation</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: colors.secondary }]}>
-                <Text style={styles.buttonText}>View Profile</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -181,5 +244,45 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  pricingContainer: {
+    marginTop: 8,
+  },
+  firstConsultPricing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  originalPrice: {
+    fontSize: 16,
+    fontWeight: '500',
+    textDecorationLine: 'line-through',
+    opacity: 0.6,
+  },
+  discountedPrice: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  regularPrice: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  discountBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  firstConsultNote: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  buttonIcon: {
+    marginRight: 6,
   },
 });

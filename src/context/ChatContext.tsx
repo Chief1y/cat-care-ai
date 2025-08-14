@@ -7,6 +7,7 @@ export type ChatMessage = {
   confidence?: number;
   urgency?: "low" | "medium" | "high" | "emergency";
   recommendations?: string[];
+  isUpgradeMessage?: boolean; // Flag for upgrade messages
   doctorInfo?: {
     id: number;
     name: string;
